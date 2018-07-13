@@ -34,7 +34,7 @@ except ImportError:
 DCM_LBL_CTL = (0x2005, 0x1429)
 DCM_PHASE_NUM = (0x2001, 0x1008)
 
-def convert_dicoms(dicom_dir, out_fname, log=sys.stdout):
+def convert_dicoms(dicom_dir, out_fname=None, log=sys.stdout):
     """
     Convert DICOMS in a directory to a NIFTI file
 
@@ -161,6 +161,8 @@ def convert_dicoms(dicom_dir, out_fname, log=sys.stdout):
         if sidx == len(slice_positions):
             sidx = 0
             vidx += 1
+        print(dcm.ImageOrientationPatient, dcm.ImagePositionPatient)
+
     log.write("DONE\n")
 
     # Figure out the DCM affine
@@ -175,20 +177,25 @@ def convert_dicoms(dicom_dir, out_fname, log=sys.stdout):
     dcm_affine[:3, 3] = np.array(dcm_first.ImagePositionPatient)
     dcm_affine[:3, 2] = (np.array(dcm_last.ImagePositionPatient) - dcm_affine[:3, 3])/(len(slice_positions)-1)
 
+    # The DICOM coordinate system is left-posterior-superior rather 
+    # than right-anterior-superior for NIFTI, so we need to invert the first two axes
+    dcm_affine[0, :] = -dcm_affine[0, :]
+    dcm_affine[1, :] = -dcm_affine[1, :]
     log.write("DONE\n")
     log.write("%s\n" % dcm_affine)
 
     # Finally, create a NIFTI file from the 4D Numpy array and the affine we have determined.
-    # 
-    # Note that The DICOM coordinate system is left-posterior-superior rather 
-    # than right-anterior-superior for NIFTI, so we need to flip the first two axes
     log.write("Creating NIFTI...")
     log.flush()
 
-    data = np.flip(data, 0)
-    data = np.flip(data, 1)
     nii_out = nib.Nifti1Image(data, dcm_affine)
     nii_out.update_header()
+    if out_fname is None:
+        if dcm_first.SeriesDescription:
+            out_fname = "%s.nii" % dcm_first.SeriesDescription
+        else:
+            log.write("WARNING: Using default output filename\n")
+            out_fname = "dcm_to_nifti.nii"
     nii_out.to_filename(out_fname)
 
     log.write("DONE\n")
@@ -203,11 +210,7 @@ def main():
         sys.exit(1)
 
     fpath = sys.argv[1]
-    if fpath[-1] == "/": fpath = fpath[:-1]
-    dicom_dir = os.path.basename(fpath)
-    out_fname = "%s.nii" % os.path.basename(dicom_dir)
-
-    convert_dicoms(dicom_dir, out_fname, log=sys.stdout)
+    convert_dicoms(fpath, log=sys.stdout)
 
 if __name__ == "__main__":
     main()
