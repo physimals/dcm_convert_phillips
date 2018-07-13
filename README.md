@@ -19,6 +19,6 @@ use it to convert all of the data from the same acquisition sequence!**
 Usage
 -----
 
-python dcm_convert_phillips.py <dir_name>
+    python dcm_convert_phillips.py <dir_name>
 
-Output will be <dir_name>.nii
+Output will be ``<dir_name>.nii``
