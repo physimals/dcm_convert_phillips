@@ -161,7 +161,6 @@ def convert_dicoms(dicom_dir, out_fname=None, log=sys.stdout):
         if sidx == len(slice_positions):
             sidx = 0
             vidx += 1
-        print(dcm.ImageOrientationPatient, dcm.ImagePositionPatient)
 
     log.write("DONE\n")
 
