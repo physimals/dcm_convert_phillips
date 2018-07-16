@@ -84,8 +84,10 @@ def convert_dicoms(dicom_dir, out_fname=None, log=sys.stdout):
         dicom_images[is_lbl][phase] = dicom_images[is_lbl].get(phase, [])
         dicom_images[is_lbl][phase].append(dcm)
 
-        # Record the slice position in our set of distinct positions
-        slice_positions.add(float(dcm.SliceLocation))
+        # Record the slice position in our set of distinct positions. Convert these
+        # to integers x1000 so we can reliably compare
+        dcm.SliceLocation = int(1000*float(dcm.SliceLocation))
+        slice_positions.add(dcm.SliceLocation)
 
         # Report progress
         percent = 100*float(idx+1) / len(dcm_files)
@@ -94,7 +96,7 @@ def convert_dicoms(dicom_dir, out_fname=None, log=sys.stdout):
 
     log.write("\b\b\b\bDONE\n\n")
 
-    log.write("Slice locations: %s\n" % ", ".join(["%.1f" % s for s in sorted(slice_positions)]))
+    log.write("Slice locations: %s\n" % ", ".join(["%.1f" % (float(s)/1000) for s in sorted(slice_positions)]))
     log.write("Phases: %s\n" % ", ".join([str(p) for p in sorted(phases)]))
     log.write("Ignored (non-DICOM) files: %i\n" % len(non_dcm_files))
     for f in non_dcm_files: log.write("   - %s\n" % os.path.basename(f))
